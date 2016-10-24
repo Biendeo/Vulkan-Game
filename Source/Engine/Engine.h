@@ -22,6 +22,8 @@ namespace Biendeo::VulkanGame {
 
 		vk::ApplicationInfo applicationInfo;
 		vk::InstanceCreateInfo instanceInfo;
+		vk::PhysicalDevice physicalDevice;
+		vk::Device device;
 		vk::Instance instance;
 		vk::SurfaceKHR surface;
 

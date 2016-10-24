@@ -31,7 +31,9 @@ namespace Biendeo::VulkanGame {
 			abort();
 		}
 
-		InitialiseWindow();
+		if (!InitialiseWindow()) {
+			abort();
+		}
 
 		// This prevents GLFW from swapping buffers until it's finished.
 		glfwSwapInterval(1);
@@ -111,13 +113,72 @@ namespace Biendeo::VulkanGame {
 
 		// Now for Vulkan integration into our GLFW window.
 		uint32_t count;
-		const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+		const char** extensionsPtr = glfwGetRequiredInstanceExtensions(&count);
+		std::vector<const char*> extensions(count);
+
+		for (int i = 0; i < count; ++i) {
+			extensions[i] = extensionsPtr[i];
+		}
+
+		extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
 		PFN_vkCreateInstance pfnCreateInstance = (PFN_vkCreateInstance)glfwGetInstanceProcAddress(nullptr, "vkCreateInstance");
 
-		instanceInfo = vk::InstanceCreateInfo(vk::InstanceCreateFlags(), &applicationInfo, 0, nullptr, count, extensions);
+		instanceInfo = vk::InstanceCreateInfo(vk::InstanceCreateFlags(), &applicationInfo, 0, nullptr, extensions.size(), extensions.data());
 
 		instance = vk::createInstance(instanceInfo);
+
+		std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
+
+		if (physicalDevices.empty()) {
+			if (verbose) std::cout << "No physical devices for Vulkan to render on.\n";
+			return false;
+		}
+
+		for (vk::PhysicalDevice& physicalDevice : physicalDevices) {
+			vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
+			if (verbose) {
+				std::cout << "Driver Version: " << properties.driverVersion << "\n";
+				std::cout << "Driver Name:    " << properties.deviceName << "\n";
+				std::cout << "Driver Type:    " << vk::to_string(properties.deviceType) << "\n";
+				std::cout << "API Version:    " << VK_VERSION_MAJOR(properties.apiVersion) << "." << VK_VERSION_MINOR(properties.apiVersion) << "." << VK_VERSION_PATCH(properties.apiVersion) << "\n";
+			}
+			std::vector<vk::QueueFamilyProperties> queueFamily = physicalDevice.getQueueFamilyProperties();
+			if (verbose) std::cout << "Queue count:    " << queueFamily.size() << "\n";
+			int index = 0;
+			for (vk::QueueFamilyProperties& queueProperties : queueFamily) {
+				if (verbose) {
+					std::cout << "Queue " << index << "\n";
+					if (queueProperties.queueFlags & vk::QueueFlagBits::eGraphics) std::cout << "    Graphics\n";
+					if (queueProperties.queueFlags & vk::QueueFlagBits::eCompute) std::cout << "    Compute\n";
+					if (queueProperties.queueFlags & vk::QueueFlagBits::eTransfer) std::cout << "    Transfer\n";
+					if (queueProperties.queueFlags & vk::QueueFlagBits::eSparseBinding) std::cout << "    Sparse Binding\n";
+				}
+				++index;
+			}
+		}
+
+		physicalDevice = physicalDevices[0];
+
+		vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo();
+		vk::DeviceQueueCreateInfo deviceQueueInfo = vk::DeviceQueueCreateInfo();
+
+		float queuePriorities[] = {1.0f};
+
+		deviceQueueInfo.setQueueCount(1);
+		deviceQueueInfo.setPQueuePriorities(queuePriorities);
+		deviceInfo.setQueueCreateInfoCount(1);
+		deviceInfo.setPQueueCreateInfos(&deviceQueueInfo);
+
+		VkDevice deviceLegacy;
+
+		vkCreateDevice(physicalDevice, &(VkDeviceCreateInfo)deviceInfo, nullptr, &deviceLegacy);
+
+		device = vk::Device(deviceLegacy);
+
+		PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR = nullptr;
+
+		*(void **)&vkGetPhysicalDeviceSurfaceFormatsKHR = vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
 
 		PFN_vkCreateDevice pfnCreateDevice = (PFN_vkCreateDevice)glfwGetInstanceProcAddress(instance, "vkCreateDevice");
 		PFN_vkGetDeviceProcAddr pfnGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)glfwGetInstanceProcAddress(instance, "vkGetDeviceProcAddr");
