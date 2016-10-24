@@ -16,8 +16,11 @@ namespace Biendeo::VulkanGame {
 
 		uint64_t FrameCount();
 
+		double Delta();
+
 		private:
 		short expectedFPS;
+		double delta;
 		double lastDraw;
 		double nextDraw;
 		uint64_t frameCount;

@@ -2,7 +2,7 @@
 
 #include <thread>
 
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 
 namespace Biendeo::VulkanGame {
 	Framerate::Framerate(short expectedFPS) {
@@ -18,8 +18,10 @@ namespace Biendeo::VulkanGame {
 	}
 
 	void Framerate::UpdateDrawTimes() {
-		lastDraw = glfwGetTime();
-		nextDraw = lastDraw + 1.0 / expectedFPS;
+		double previousDraw = this->lastDraw;
+		this->lastDraw = glfwGetTime();
+		this->delta = this->lastDraw - previousDraw;
+		this->nextDraw = lastDraw + 1.0 / expectedFPS;
 	}
 
 	uint64_t Framerate::IncrementFrameCount() {
@@ -34,7 +36,12 @@ namespace Biendeo::VulkanGame {
 		this->expectedFPS = expectedFPS;
 		return expectedFPS;
 	}
+
 	uint64_t Framerate::FrameCount() {
 		return frameCount;
+	}
+
+	double Framerate::Delta() {
+		return delta;
 	}
 }

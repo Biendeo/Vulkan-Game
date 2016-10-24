@@ -1,13 +1,32 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
+
 #include "Framerate.h"
 
 namespace Biendeo::VulkanGame {
 	class Engine {
 		public:
-		Engine();
+		Engine(int argc, char* argv[]);
+		~Engine();
+
+		void Run();
 
 		private:
-		Framerate framerate;
+		Framerate* framerate;
+
+		GLFWmonitor* monitor;
+		const GLFWvidmode* vidmode;
+		GLFWwindow* window;
+
+		vk::Instance instance;
+		vk::SurfaceKHR surface;
+
+		bool verbose;
+
+		bool InitialiseGLFW();
+		bool CheckVulkanCompatability();
+		bool InitialiseWindow();
 	};
 }
