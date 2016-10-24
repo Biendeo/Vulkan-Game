@@ -3,6 +3,10 @@
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 
+#include "Engine/Engine.h"
+
+using namespace Biendeo::VulkanGame;
+
 int main(int argc, char* argv[]) {
 	// GLFW needs to initialize before the program starts.
 	if (!glfwInit()) {
@@ -60,18 +64,28 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Finally, set up the Vulkan surface.
-	VkSurfaceKHR surface;
-	VkResult err = glfwCreateWindowSurface(instance, window, NULL, &surface);
-	if (err) {
+	vk::SurfaceKHR surface;
+	VkSurfaceKHR surfaceLegacy = surface;
+	VkResult err = glfwCreateWindowSurface(instance, window, NULL, &surfaceLegacy);
+	if (err != (VkResult)vk::Result::eSuccess) {
 		std::cout << "Vulkan did not create a surface properly.\n";
 		return 1;
 	} else {
 		std::cout << "Vulkan was successfully created as a surface.\n";
 	}
 
+	glfwSwapInterval(1);
 
-	// This sleep just tests that the window started.
-	_sleep(5000L);
+	// Testing a framerate class.
+	Framerate framerate(144);
+
+	while (true) {
+		framerate.SleepToNextSwapBuffer();
+		glfwSwapBuffers(window);
+		std::cout << "Frame " << framerate.FrameCount() << "\n";
+		framerate.UpdateDrawTimes();
+		framerate.IncrementFrameCount();
+	}
 
 
 	// Destroy the Vulkan surface.
