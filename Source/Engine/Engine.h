@@ -20,6 +20,8 @@ namespace Biendeo::VulkanGame {
 		const GLFWvidmode* vidmode;
 		GLFWwindow* window;
 
+		vk::ApplicationInfo applicationInfo;
+		vk::InstanceCreateInfo instanceInfo;
 		vk::Instance instance;
 		vk::SurfaceKHR surface;
 
@@ -28,5 +30,7 @@ namespace Biendeo::VulkanGame {
 		bool InitialiseGLFW();
 		bool CheckVulkanCompatability();
 		bool InitialiseWindow();
+
+		void DrawBuffer();
 	};
 }

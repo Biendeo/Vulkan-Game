@@ -4,9 +4,6 @@
 #include <string>
 #include <vector>
 
-#include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3.h>
-
 namespace Biendeo::VulkanGame {
 	Engine::Engine(int argc, char* argv[]) {
 		// Start off by turning the arguments into a vector.
@@ -41,7 +38,7 @@ namespace Biendeo::VulkanGame {
 
 		// This establishes a framerate.
 		// TODO: Custom based on argument?
-		framerate = new Framerate(250);
+		framerate = new Framerate(vidmode->refreshRate);
 	}
 
 	Engine::~Engine() {
@@ -49,7 +46,8 @@ namespace Biendeo::VulkanGame {
 			delete framerate;
 		}
 
-		vkDestroySurfaceKHR(instance, surface, NULL);
+		instance.destroySurfaceKHR(surface);
+		instance.destroy();
 
 		glfwDestroyWindow(window);
 
@@ -58,6 +56,7 @@ namespace Biendeo::VulkanGame {
 
 	void Engine::Run() {
 		while (true) {
+			DrawBuffer();
 			framerate->SleepToNextSwapBuffer();
 			glfwSwapBuffers(window);
 			std::cout << "Frame " << framerate->FrameCount() << "\n";
@@ -107,30 +106,33 @@ namespace Biendeo::VulkanGame {
 		// This is the point when you call glfwWindowHint for features.
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+		// Then we set up the Vulkan application information.
+		applicationInfo = vk::ApplicationInfo("HELLO WORLD!", 0U, "B-Power", 0U, 0U);
 
 		// Now for Vulkan integration into our GLFW window.
 		uint32_t count;
 		const char** extensions = glfwGetRequiredInstanceExtensions(&count);
 
-		PFN_vkCreateInstance pfnCreateInstance = (PFN_vkCreateInstance)glfwGetInstanceProcAddress(NULL, "vkCreateInstance");
-		vk::InstanceCreateInfo instanceCreateInfo;
-		instanceCreateInfo.setEnabledExtensionCount(count);
-		instanceCreateInfo.setPpEnabledExtensionNames(extensions);
-		instance = vk::createInstance(instanceCreateInfo);
+		PFN_vkCreateInstance pfnCreateInstance = (PFN_vkCreateInstance)glfwGetInstanceProcAddress(nullptr, "vkCreateInstance");
+
+		instanceInfo = vk::InstanceCreateInfo(vk::InstanceCreateFlags(), &applicationInfo, 0, nullptr, count, extensions);
+
+		instance = vk::createInstance(instanceInfo);
+
 		PFN_vkCreateDevice pfnCreateDevice = (PFN_vkCreateDevice)glfwGetInstanceProcAddress(instance, "vkCreateDevice");
 		PFN_vkGetDeviceProcAddr pfnGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)glfwGetInstanceProcAddress(instance, "vkGetDeviceProcAddr");
 
 		// Then, we create the window.
 		if (borderlessFullscreen) {
-			window = glfwCreateWindow(vidmode->width, vidmode->height, windowTitle, monitor, NULL);
+			window = glfwCreateWindow(vidmode->width, vidmode->height, windowTitle, monitor, nullptr);
 		} else {
-			window = glfwCreateWindow(800, 600, windowTitle, NULL, NULL);
+			window = glfwCreateWindow(800, 600, windowTitle, nullptr, nullptr);
 		}
 
 		// Finally, set up the Vulkan surface.
 		// TODO: Add surface properties here.
 		VkSurfaceKHR surfaceLegacy = surface;
-		VkResult err = glfwCreateWindowSurface(instance, window, NULL, &surfaceLegacy);
+		VkResult err = glfwCreateWindowSurface(instance, window, nullptr, &surfaceLegacy);
 		if (err != (VkResult)vk::Result::eSuccess) {
 			std::cout << "Vulkan did not create a surface properly.\n";
 			return 1;
@@ -139,5 +141,9 @@ namespace Biendeo::VulkanGame {
 		}
 
 		return true;
+	}
+
+	void Engine::DrawBuffer() {
+
 	}
 }

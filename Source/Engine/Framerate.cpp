@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 namespace Biendeo::VulkanGame {
